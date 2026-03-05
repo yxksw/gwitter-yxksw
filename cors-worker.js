@@ -51,32 +51,71 @@ export default {
       });
     }
 
-    // 处理代理请求
-    if (!targetUrl) {
-      return new Response('Missing url parameter. Usage: ?url=<target_url>', { status: 400 });
+    // 处理 CORS 预检请求
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Max-Age': '86400'
+        }
+      });
+    }
+
+    // 处理代理请求 - 用于获取 access_token
+    // 如果没有 url 参数，默认转发到 GitHub OAuth access_token 端点
+    let finalTargetUrl = targetUrl;
+    if (!finalTargetUrl && request.method === 'POST') {
+      finalTargetUrl = 'https://github.com/login/oauth/access_token';
+    }
+
+    if (!finalTargetUrl) {
+      return new Response('Missing url parameter or invalid request', {
+        status: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'text/plain'
+        }
+      });
     }
 
     try {
-      const response = await fetch(targetUrl, {
+      // 克隆请求并修改 headers
+      const modifiedRequest = new Request(finalTargetUrl, {
         method: request.method,
         headers: {
           ...Object.fromEntries(request.headers),
-          'Origin': null
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: request.body
       });
 
-      const responseHeaders = new Headers(response.headers);
-      responseHeaders.set('Access-Control-Allow-Origin', '*');
-      responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      responseHeaders.set('Access-Control-Allow-Headers', '*');
+      const response = await fetch(modifiedRequest);
 
-      return new Response(response.body, {
+      // 读取响应内容
+      const responseBody = await response.text();
+
+      // 返回响应，添加 CORS 头
+      return new Response(responseBody, {
         status: response.status,
-        headers: responseHeaders
+        headers: {
+          'Content-Type': response.headers.get('Content-Type') || 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': '*'
+        }
       });
     } catch (error) {
-      return new Response('Proxy error: ' + error.message, { status: 500 });
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     }
   }
 };
