@@ -44,10 +44,9 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>🐦 Gwitter NPM Demo</h1>
+        <h1>🐦 Gwitter - 异飨客</h1>
         <p>
-          This is a demonstration of Gwitter using NPM installation in a React
-          project with TypeScript.
+          这是一个基于 GitHub API 的 Twitter 风格微博，你能在这里看到我的日常~
         </p>
         <p>
           Try different configuration presets below, then update the GitHub
