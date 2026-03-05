@@ -5,6 +5,38 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gwitter - 异飨客</title>
+    <script>
+      // 处理 GitHub OAuth 回调
+      // 必须在页面加载前执行，以便在 gwitter 的 windowOpen 监听之前处理
+      (function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        
+        // 如果是 OAuth 回调（有 code 或 error 参数）
+        if (code || error) {
+          // 检查是否是弹窗（有 opener）
+          if (window.opener) {
+            // 发送消息给父窗口
+            if (code) {
+              window.opener.postMessage(
+                JSON.stringify({ result: 'access_token=' + code, error: null }),
+                '*'
+              );
+            } else {
+              window.opener.postMessage(
+                JSON.stringify({ result: null, error: errorDescription || error || 'Unknown error' }),
+                '*'
+              );
+            }
+            // 显示提示并关闭窗口
+            document.write('<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;"><h2>' + (code ? '✅ 授权成功，正在关闭窗口...' : '❌ 授权失败: ' + (errorDescription || error)) + '</h2></div>');
+            setTimeout(() => window.close(), 1500);
+          }
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
