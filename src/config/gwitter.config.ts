@@ -26,9 +26,8 @@ export const config: GwitterConfig = {
     clientSecret: import.meta.env.VITE_GITHUB_CLIENT_SECRET || '',
     pageSize: 6,
     // CORS 代理 - 用于 OAuth 请求
-    // 可以使用 https://cors-anywhere.herokuapp.com/ 或其他代理服务
-    // 或者自己部署 https://github.com/Rob--W/cors-anywhere
-    autoProxy: 'https://cors-anywhere.herokuapp.com/https://github.com/login/oauth/access_token',
+    // 自定义 Cloudflare Worker 代理
+    autoProxy: 'https://gwitter-api.261770.xyz/?url=https://github.com/login/oauth/access_token',
     owner: import.meta.env.VITE_GITHUB_OWNER || 'yxksw',
     repo: import.meta.env.VITE_GITHUB_REPO || 'weibo',
   },

@@ -7,6 +7,24 @@ import { GwitterConfig, config } from './config/gwitter.config';
 function App() {
   const [currentConfig] = useState<GwitterConfig>(config);
 
+  // 处理 GitHub OAuth 回调
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (code && window.opener) {
+      // 这是 OAuth 回调窗口，发送消息给父窗口
+      window.opener.postMessage(
+        JSON.stringify({ result: 'access_token=' + code, error: null }),
+        '*'
+      );
+      // 显示成功消息
+      document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;"><h2>✅ 授权成功，正在关闭窗口...</h2></div>';
+      // 关闭窗口
+      setTimeout(() => window.close(), 1500);
+    }
+  }, []);
+
   const initializeGwitter = useCallback((config: GwitterConfig) => {
     setTimeout(() => {
       try {
