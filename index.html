@@ -7,32 +7,40 @@
     <title>Gwitter - 异飨客</title>
     <script>
       // 处理 GitHub OAuth 回调
-      // 必须在页面加载前执行，以便在 gwitter 的 windowOpen 监听之前处理
       (function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const error = urlParams.get('error');
-        const errorDescription = urlParams.get('error_description');
-        
-        // 如果是 OAuth 回调（有 code 或 error 参数）且是弹窗（有 opener）
+        var urlParams = new URLSearchParams(window.location.search);
+        var code = urlParams.get('code');
+        var error = urlParams.get('error');
+        var errorDescription = urlParams.get('error_description');
+
+        // 如果是 OAuth 回调且是弹窗
         if ((code || error) && window.opener) {
           // 发送消息给父窗口
-          if (code) {
-            window.opener.postMessage(
-              JSON.stringify({ result: 'access_token=' + code, error: null }),
-              '*'
-            );
-          } else {
-            window.opener.postMessage(
-              JSON.stringify({ result: null, error: errorDescription || error || 'Unknown error' }),
-              '*'
-            );
-          }
-          // 阻止页面继续加载 React 应用
-          document.documentElement.innerHTML = '<head><title>OAuth Callback</title></head><body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);"><div style="text-align:center;padding:40px;background:white;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);"><div style="font-size:64px;margin-bottom:20px;">' + (code ? '✅' : '❌') + '</div><h2 style="color:#333;margin-bottom:12px;font-size:24px;">' + (code ? '授权成功' : '授权失败') + '</h2><p style="color:#666;">' + (code ? 'GitHub 授权成功！正在关闭窗口...' : (errorDescription || error || 'Unknown error')) + '</p></div></body>';
-          setTimeout(() => window.close(), 1500);
-          // 阻止后续脚本执行
-          throw new Error('OAuth callback handled, stopping page load');
+          var message = code
+            ? { result: 'access_token=' + code, error: null }
+            : { result: null, error: errorDescription || error || 'Unknown error' };
+          window.opener.postMessage(JSON.stringify(message), '*');
+
+          // 显示提示页面
+          var icon = code ? '✓' : '✗';
+          var title = code ? '授权成功' : '授权失败';
+          var desc = code ? 'GitHub 授权成功！正在关闭窗口...' : (errorDescription || error || 'Unknown error');
+
+          document.write(
+            '<!DOCTYPE html><html><head><title>OAuth</title><style>' +
+            'body{margin:0;display:flex;justify-content:center;align-items:center;height:100vh;' +
+            'font-family:sans-serif;background:linear-gradient(135deg,#667eea,#764ba2)}' +
+            '.box{text-align:center;padding:40px;background:white;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}' +
+            '.icon{font-size:64px;margin-bottom:20px;color:' + (code ? '#28a745' : '#dc3545') + '}' +
+            'h2{color:#333;margin-bottom:12px}' +
+            'p{color:#666}' +
+            '</style></head><body>' +
+            '<div class="box"><div class="icon">' + icon + '</div><h2>' + title + '</h2><p>' + desc + '</p></div>' +
+            '</body></html>'
+          );
+
+          setTimeout(function() { window.close(); }, 1500);
+          throw new Error('OAuth handled');
         }
       })();
     </script>
