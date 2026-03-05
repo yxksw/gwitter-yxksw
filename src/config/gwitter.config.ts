@@ -1,4 +1,5 @@
 // Gwitter Configuration
+/// <reference types="../vite-env.d.ts" />
 
 export interface GwitterConfig {
   request: {
