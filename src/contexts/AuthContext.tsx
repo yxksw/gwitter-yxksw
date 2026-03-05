@@ -160,7 +160,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-          const data = JSON.parse(event.data);
+          // event.data 可能是对象或字符串
+          let data;
+          if (typeof event.data === 'string') {
+            data = JSON.parse(event.data);
+          } else if (typeof event.data === 'object' && event.data !== null) {
+            data = event.data;
+          } else {
+            return;
+          }
+
+          // 只处理 OAuth 回调消息
+          if (!data.result && !data.error) {
+            return;
+          }
 
           if (data.error) {
             reject(new Error(data.error));
