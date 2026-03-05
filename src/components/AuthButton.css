@@ -1,45 +1,65 @@
 .auth-button {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .auth-button.loading {
   color: #666;
+  font-style: italic;
 }
 
+/* 登录按钮样式 */
+.login-btn {
+  background-color: #24292f;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.login-btn:hover {
+  background-color: #1a1f23;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.github-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* 已登录状态样式 */
 .auth-button.authenticated {
   background-color: #f6f8fa;
-  border: 1px solid #e1e4e8;
+  border: 1px solid #d0d7de;
 }
 
 .user-avatar {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .user-name {
-  color: #24292e;
+  color: #24292f;
   font-weight: 600;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .logout-btn {
-  padding: 4px 10px;
-  background-color: #fff;
-  border: 1px solid #d0d7de;
-  border-radius: 4px;
+  background-color: transparent;
   color: #cf222e;
+  border: 1px solid #d0d7de;
+  padding: 4px 12px;
+  border-radius: 4px;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -47,47 +67,6 @@
 
 .logout-btn:hover {
   background-color: #cf222e;
-  color: #fff;
+  color: white;
   border-color: #cf222e;
-}
-
-.login-btn {
-  background-color: #24292f;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  gap: 8px;
-}
-
-.login-btn:hover {
-  background-color: #32383f;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.github-icon {
-  width: 18px;
-  height: 18px;
-}
-
-/* Header 中的样式 */
-.App-header .auth-section {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-}
-
-@media (max-width: 768px) {
-  .auth-button.authenticated {
-    padding: 6px 10px;
-  }
-
-  .user-name {
-    display: none;
-  }
-
-  .logout-btn {
-    padding: 4px 8px;
-    font-size: 11px;
-  }
 }

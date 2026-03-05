@@ -5,98 +5,48 @@ import './App.css';
 import { GwitterConfig, config } from './config/gwitter.config';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AuthButton } from './components/AuthButton';
-import { LoginRequiredModal } from './components/LoginRequiredModal';
-import { useRequireAuth } from './hooks/useRequireAuth';
+import { ProtectedGwitter } from './components/ProtectedGwitter';
 
-// 包装组件，使用认证上下文
+// 内部组件，使用 useAuth
 function AppContent() {
   const [currentConfig, setCurrentConfig] = useState<GwitterConfig>(config);
-  const { token, isAuthenticated, user } = useAuth();
-  const { isModalOpen, action, requireAuth, closeModal, onLoginSuccess } = useRequireAuth();
-
-  // 更新配置，添加用户 token
-  useEffect(() => {
-    setCurrentConfig(prev => ({
-      ...prev,
-      request: {
-        ...prev.request,
-        // 如果用户已登录，使用用户的 token，否则使用配置的 token
-        token: token || prev.request.token,
-      },
-    }));
-  }, [token]);
-
-  // 拦截 Gwitter 的交互操作
-  useEffect(() => {
-    // 监听点赞按钮点击
-    const handleLikeClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const likeButton = target.closest('.gweet-reaction');
-      if (likeButton && !isAuthenticated) {
-        e.preventDefault();
-        e.stopPropagation();
-        requireAuth('点赞');
-        return false;
-      }
-    };
-
-    // 监听评论按钮点击
-    const handleCommentClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const commentButton = target.closest('.gweet-comment-btn');
-      if (commentButton && !isAuthenticated) {
-        e.preventDefault();
-        e.stopPropagation();
-        requireAuth('评论');
-        return false;
-      }
-    };
-
-    // 监听回复按钮点击
-    const handleReplyClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const replyButton = target.closest('.comment-reply-btn');
-      if (replyButton && !isAuthenticated) {
-        e.preventDefault();
-        e.stopPropagation();
-        requireAuth('回复评论');
-        return false;
-      }
-    };
-
-    const container = document.getElementById('gwitter-container');
-    if (container) {
-      container.addEventListener('click', handleLikeClick, true);
-      container.addEventListener('click', handleCommentClick, true);
-      container.addEventListener('click', handleReplyClick, true);
-    }
-
-    return () => {
-      if (container) {
-        container.removeEventListener('click', handleLikeClick, true);
-        container.removeEventListener('click', handleCommentClick, true);
-        container.removeEventListener('click', handleReplyClick, true);
-      }
-    };
-  }, [isAuthenticated, requireAuth]);
+  const { isAuthenticated, user } = useAuth();
 
   // 处理 GitHub OAuth 回调
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-
+    
     if (code && window.opener) {
-      // 这是 OAuth 回调窗口，发送消息给父窗口
       window.opener.postMessage(
         JSON.stringify({ result: 'access_token=' + code, error: null }),
         '*'
       );
-      // 显示成功消息
       document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;"><h2>✅ 授权成功，正在关闭窗口...</h2></div>';
-      // 关闭窗口
       setTimeout(() => window.close(), 1500);
     }
   }, []);
+
+  // 当用户登录状态改变时，更新 Gwitter 配置
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setCurrentConfig(prev => ({
+        ...prev,
+        request: {
+          ...prev.request,
+          token: user.token,
+        }
+      }));
+    } else {
+      setCurrentConfig(prev => ({
+        ...prev,
+        request: {
+          ...prev.request,
+          token: '',
+        }
+      }));
+    }
+  }, [isAuthenticated, user]);
 
   const initializeGwitter = useCallback((config: GwitterConfig) => {
     setTimeout(() => {
@@ -142,15 +92,20 @@ function AppContent() {
               这是一个基于 GitHub API 的 Twitter 风格微博，你能在这里看到我的日常~
             </p>
           </div>
-          <div className="auth-section">
+          <div className="header-auth">
             <AuthButton />
           </div>
         </div>
+        {!isAuthenticated && (
+          <div className="login-notice">
+            <p>💡 登录后可以评论、点赞和参与互动</p>
+          </div>
+        )}
       </header>
 
       <main className="App-main">
         <div className="demo-info">
-          <h2>📋 当前配置</h2>
+          <h2>📋 Current Configuration</h2>
           <div className="config-display">
             <div className="config-item">
               <strong>Owner:</strong> {currentConfig.request.owner}
@@ -170,22 +125,19 @@ function AppContent() {
               {currentConfig.app?.enableAbout ? 'Yes' : 'No'}
             </div>
             <div className="config-item">
-              <strong>登录状态:</strong>{' '}
+              <strong>Login Status:</strong>{' '}
               {isAuthenticated ? (
-                <span className="auth-status logged-in">已登录 ({user?.login})</span>
+                <span className="status-logged-in">✅ 已登录 ({user?.login})</span>
               ) : (
-                <span className="auth-status logged-out">未登录</span>
+                <span className="status-not-logged-in">❌ 未登录</span>
               )}
             </div>
           </div>
-          {!isAuthenticated && (
-            <div className="login-notice">
-              <p>💡 <strong>提示：</strong>登录后可以评论、点赞和参与互动</p>
-            </div>
-          )}
         </div>
 
-        <div id="gwitter-container" className="gwitter-demo-container"></div>
+        <ProtectedGwitter>
+          <div id="gwitter-container" className="gwitter-demo-container"></div>
+        </ProtectedGwitter>
       </main>
 
       <footer className="App-footer">
@@ -199,20 +151,14 @@ function AppContent() {
           </a>
         </div>
       </footer>
-
-      {/* 登录提示弹窗 */}
-      <LoginRequiredModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        action={action}
-      />
     </div>
   );
 }
 
+// 主 App 组件，提供 AuthProvider
 function App() {
   return (
-    <AuthProvider>
+    <AuthProvider clientId={config.request.clientID}>
       <AppContent />
     </AuthProvider>
   );

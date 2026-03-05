@@ -1,0 +1,23 @@
+.protected-gwitter-wrapper {
+  position: relative;
+}
+
+.login-prompt-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+/* 未登录时的视觉提示 */
+.gwitter-demo-container:has(.login-overlay) {
+  position: relative;
+}
+
+/* 禁用未登录时的交互元素 */
+.protected-gwitter-wrapper:not(:has(.login-overlay)) [class*="reaction"],
+.protected-gwitter-wrapper:not(:has(.login-overlay)) [class*="comment"] {
+  cursor: not-allowed;
+}
