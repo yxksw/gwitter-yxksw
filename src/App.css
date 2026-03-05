@@ -1,5 +1,4 @@
 .App {
-  /* text-align: center; */
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
@@ -13,17 +12,32 @@
   margin-bottom: 30px;
 }
 
-.App-header h1 {
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.header-title {
+  flex: 1;
+}
+
+.header-title h1 {
   color: #2c3e50;
   margin: 0 0 10px 0;
   font-size: 2.5em;
 }
 
-.App-header p {
+.header-title p {
   color: #666;
   margin: 10px 0;
   font-size: 1.1em;
   line-height: 1.6;
+}
+
+.auth-section {
+  flex-shrink: 0;
 }
 
 .App-header code {
@@ -70,6 +84,32 @@
   color: #495057;
   display: block;
   margin-bottom: 4px;
+}
+
+.auth-status {
+  font-weight: 600;
+}
+
+.auth-status.logged-in {
+  color: #28a745;
+}
+
+.auth-status.logged-out {
+  color: #dc3545;
+}
+
+.login-notice {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background-color: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 6px;
+  color: #0066cc;
+}
+
+.login-notice p {
+  margin: 0;
+  font-size: 0.95em;
 }
 
 .gwitter-demo-container {
@@ -124,4 +164,28 @@
   margin: 0;
   color: #666;
   font-size: 0.9em;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .App {
+    padding: 10px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-title h1 {
+    font-size: 1.8em;
+  }
+
+  .auth-section {
+    align-self: flex-end;
+  }
+
+  .config-display {
+    grid-template-columns: 1fr;
+  }
 }

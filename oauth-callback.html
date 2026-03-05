@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub OAuth 授权回调</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #24292e;
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    p {
+      color: #586069;
+      font-size: 16px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e1e4e8;
+      border-top-color: #24292f;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .success {
+      color: #28a745;
+    }
+
+    .error {
+      color: #dc3545;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: #24292f;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn:hover {
+      background-color: #32383f;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      color: #586069;
+      border: 1px solid #d0d7de;
+      margin-left: 10px;
+    }
+
+    .btn-secondary:hover {
+      background-color: #f6f8fa;
+      color: #24292e;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon" id="icon">⏳</div>
+    <h1 id="title">正在处理授权...</h1>
+    <p id="message">请稍候，正在完成 GitHub 登录流程</p>
+    <div id="loading" class="loading"></div>
+    <div id="actions" style="display: none; margin-top: 20px;">
+      <button class="btn" onclick="window.close()">关闭窗口</button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const icon = document.getElementById('icon');
+      const title = document.getElementById('title');
+      const message = document.getElementById('message');
+      const loading = document.getElementById('loading');
+      const actions = document.getElementById('actions');
+
+      // 获取 URL 参数
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+      const error = urlParams.get('error');
+      const errorDescription = urlParams.get('error_description');
+
+      // 如果有错误
+      if (error) {
+        icon.textContent = '❌';
+        icon.className = 'icon error';
+        title.textContent = '授权失败';
+        message.textContent = errorDescription || error || '未知错误';
+        loading.style.display = 'none';
+        actions.style.display = 'block';
+        return;
+      }
+
+      // 如果没有 code
+      if (!code) {
+        icon.textContent = '⚠️';
+        icon.className = 'icon error';
+        title.textContent = '授权失败';
+        message.textContent = '未收到授权码，请重试';
+        loading.style.display = 'none';
+        actions.style.display = 'block';
+        return;
+      }
+
+      // 发送消息给父窗口
+      if (window.opener) {
+        window.opener.postMessage(
+          JSON.stringify({
+            result: 'access_token=' + code,
+            error: null,
+            state: state
+          }),
+          '*'
+        );
+
+        // 显示成功状态
+        icon.textContent = '✅';
+        icon.className = 'icon success';
+        title.textContent = '授权成功';
+        message.textContent = '您已成功登录，此窗口将在 2 秒后自动关闭';
+        loading.style.display = 'none';
+
+        // 自动关闭窗口
+        setTimeout(() => {
+          window.close();
+        }, 2000);
+      } else {
+        // 没有父窗口，直接跳转回主应用
+        icon.textContent = '✅';
+        icon.className = 'icon success';
+        title.textContent = '授权成功';
+        message.textContent = '正在返回应用...';
+        loading.style.display = 'none';
+
+        // 保存 code 到 sessionStorage
+        sessionStorage.setItem('github_oauth_code', code);
+        sessionStorage.setItem('github_oauth_state', state || '');
+
+        // 跳转回主页面
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
+      }
+    })();
+  </script>
+</body>
+</html>

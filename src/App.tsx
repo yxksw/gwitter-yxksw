@@ -3,15 +3,88 @@ import 'gwitter/dist/gwitter.min.css';
 import { useCallback, useEffect, useState } from 'react';
 import './App.css';
 import { GwitterConfig, config } from './config/gwitter.config';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthButton } from './components/AuthButton';
+import { LoginRequiredModal } from './components/LoginRequiredModal';
+import { useRequireAuth } from './hooks/useRequireAuth';
 
-function App() {
-  const [currentConfig] = useState<GwitterConfig>(config);
+// 包装组件，使用认证上下文
+function AppContent() {
+  const [currentConfig, setCurrentConfig] = useState<GwitterConfig>(config);
+  const { token, isAuthenticated, user } = useAuth();
+  const { isModalOpen, action, requireAuth, closeModal, onLoginSuccess } = useRequireAuth();
+
+  // 更新配置，添加用户 token
+  useEffect(() => {
+    setCurrentConfig(prev => ({
+      ...prev,
+      request: {
+        ...prev.request,
+        // 如果用户已登录，使用用户的 token，否则使用配置的 token
+        token: token || prev.request.token,
+      },
+    }));
+  }, [token]);
+
+  // 拦截 Gwitter 的交互操作
+  useEffect(() => {
+    // 监听点赞按钮点击
+    const handleLikeClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const likeButton = target.closest('.gweet-reaction');
+      if (likeButton && !isAuthenticated) {
+        e.preventDefault();
+        e.stopPropagation();
+        requireAuth('点赞');
+        return false;
+      }
+    };
+
+    // 监听评论按钮点击
+    const handleCommentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const commentButton = target.closest('.gweet-comment-btn');
+      if (commentButton && !isAuthenticated) {
+        e.preventDefault();
+        e.stopPropagation();
+        requireAuth('评论');
+        return false;
+      }
+    };
+
+    // 监听回复按钮点击
+    const handleReplyClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const replyButton = target.closest('.comment-reply-btn');
+      if (replyButton && !isAuthenticated) {
+        e.preventDefault();
+        e.stopPropagation();
+        requireAuth('回复评论');
+        return false;
+      }
+    };
+
+    const container = document.getElementById('gwitter-container');
+    if (container) {
+      container.addEventListener('click', handleLikeClick, true);
+      container.addEventListener('click', handleCommentClick, true);
+      container.addEventListener('click', handleReplyClick, true);
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('click', handleLikeClick, true);
+        container.removeEventListener('click', handleCommentClick, true);
+        container.removeEventListener('click', handleReplyClick, true);
+      }
+    };
+  }, [isAuthenticated, requireAuth]);
 
   // 处理 GitHub OAuth 回调
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-    
+
     if (code && window.opener) {
       // 这是 OAuth 回调窗口，发送消息给父窗口
       window.opener.postMessage(
@@ -57,26 +130,27 @@ function App() {
 
   useEffect(() => {
     initializeGwitter(currentConfig);
-  }, []);
+  }, [currentConfig, initializeGwitter]);
 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>🐦 Gwitter - 异飨客</h1>
-        <p>
-          这是一个基于 GitHub API 的 Twitter 风格微博，你能在这里看到我的日常~
-        </p>
-        <p>
-          Try different configuration presets below, then update the GitHub
-          credentials in
-          <code>src/config/gwitter.config.ts</code> with your actual repository
-          details.
-        </p>
+        <div className="header-content">
+          <div className="header-title">
+            <h1>🐦 Gwitter - 异飨客</h1>
+            <p>
+              这是一个基于 GitHub API 的 Twitter 风格微博，你能在这里看到我的日常~
+            </p>
+          </div>
+          <div className="auth-section">
+            <AuthButton />
+          </div>
+        </div>
       </header>
 
       <main className="App-main">
         <div className="demo-info">
-          <h2>📋 Current Configuration</h2>
+          <h2>📋 当前配置</h2>
           <div className="config-display">
             <div className="config-item">
               <strong>Owner:</strong> {currentConfig.request.owner}
@@ -95,7 +169,20 @@ function App() {
               <strong>Enable About:</strong>{' '}
               {currentConfig.app?.enableAbout ? 'Yes' : 'No'}
             </div>
+            <div className="config-item">
+              <strong>登录状态:</strong>{' '}
+              {isAuthenticated ? (
+                <span className="auth-status logged-in">已登录 ({user?.login})</span>
+              ) : (
+                <span className="auth-status logged-out">未登录</span>
+              )}
+            </div>
           </div>
+          {!isAuthenticated && (
+            <div className="login-notice">
+              <p>💡 <strong>提示：</strong>登录后可以评论、点赞和参与互动</p>
+            </div>
+          )}
         </div>
 
         <div id="gwitter-container" className="gwitter-demo-container"></div>
@@ -112,7 +199,22 @@ function App() {
           </a>
         </div>
       </footer>
+
+      {/* 登录提示弹窗 */}
+      <LoginRequiredModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        action={action}
+      />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

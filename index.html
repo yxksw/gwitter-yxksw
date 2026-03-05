@@ -7,40 +7,33 @@
     <title>Gwitter - 异飨客</title>
     <script>
       // 处理 GitHub OAuth 回调
+      // 必须在页面加载前执行，以便在 gwitter 的 windowOpen 监听之前处理
       (function() {
-        var urlParams = new URLSearchParams(window.location.search);
-        var code = urlParams.get('code');
-        var error = urlParams.get('error');
-        var errorDescription = urlParams.get('error_description');
-
-        // 如果是 OAuth 回调且是弹窗
-        if ((code || error) && window.opener) {
-          // 发送消息给父窗口
-          var message = code
-            ? { result: 'access_token=' + code, error: null }
-            : { result: null, error: errorDescription || error || 'Unknown error' };
-          window.opener.postMessage(JSON.stringify(message), '*');
-
-          // 显示提示页面
-          var icon = code ? '✓' : '✗';
-          var title = code ? '授权成功' : '授权失败';
-          var desc = code ? 'GitHub 授权成功！正在关闭窗口...' : (errorDescription || error || 'Unknown error');
-
-          document.write(
-            '<!DOCTYPE html><html><head><title>OAuth</title><style>' +
-            'body{margin:0;display:flex;justify-content:center;align-items:center;height:100vh;' +
-            'font-family:sans-serif;background:linear-gradient(135deg,#667eea,#764ba2)}' +
-            '.box{text-align:center;padding:40px;background:white;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}' +
-            '.icon{font-size:64px;margin-bottom:20px;color:' + (code ? '#28a745' : '#dc3545') + '}' +
-            'h2{color:#333;margin-bottom:12px}' +
-            'p{color:#666}' +
-            '</style></head><body>' +
-            '<div class="box"><div class="icon">' + icon + '</div><h2>' + title + '</h2><p>' + desc + '</p></div>' +
-            '</body></html>'
-          );
-
-          setTimeout(function() { window.close(); }, 1500);
-          throw new Error('OAuth handled');
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        
+        // 如果是 OAuth 回调（有 code 或 error 参数）
+        if (code || error) {
+          // 检查是否是弹窗（有 opener）
+          if (window.opener) {
+            // 发送消息给父窗口
+            if (code) {
+              window.opener.postMessage(
+                JSON.stringify({ result: 'access_token=' + code, error: null }),
+                '*'
+              );
+            } else {
+              window.opener.postMessage(
+                JSON.stringify({ result: null, error: errorDescription || error || 'Unknown error' }),
+                '*'
+              );
+            }
+            // 显示提示并关闭窗口
+            document.write('<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;"><h2>' + (code ? '✅ 授权成功，正在关闭窗口...' : '❌ 授权失败: ' + (errorDescription || error)) + '</h2></div>');
+            setTimeout(() => window.close(), 1500);
+          }
         }
       })();
     </script>
