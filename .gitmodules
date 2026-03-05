@@ -1,0 +1,3 @@
+[submodule "Gwitter"]
+	path = Gwitter
+	url = https://github.com/SimonAKing/Gwitter.git
